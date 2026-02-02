@@ -1,88 +1,38 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"html/template"
 	"log"
 	"net/http"
-
-	"github.com/battlej07/goshort/web"
-)
-
-type ResultPageData struct {
-	ShortURL string
-}
-
-var (
-	homeTmpl    = template.Must(template.ParseFS(web.Files, "views/home.html"))
-	resultTmpl  = template.Must(template.ParseFS(web.Files, "views/result.html"))
-	notFundTmpl = template.Must(template.ParseFS(web.Files, "views/not-found.html"))
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
 	mux := http.NewServeMux()
-
 	db := map[string]string{}
 
-	mux.Handle("GET /static/", http.FileServerFS(web.Files))
-
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		_ = homeTmpl.Execute(w, nil)
-	})
-
-	mux.HandleFunc("POST /shorten", func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "bad request", http.StatusBadRequest)
-		}
-
-		url := r.FormValue("url")
-
-		shortend, err := generateRandomString()
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
-
-		db[shortend] = url
-
-		sheme := "http"
-		if r.TLS != nil {
-			sheme = "https"
-		}
-
-		data := ResultPageData{sheme + "://" + r.Host + "/" + shortend}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-		resultTmpl.Execute(w, data)
-	})
-
-	mux.HandleFunc("GET /{shortendID}", func(w http.ResponseWriter, r *http.Request) {
-		shortendID := r.PathValue("shortendID")
-
-		url, isOk := db[shortendID]
-		if !isOk {
-			notFundTmpl.Execute(w, nil)
-		}
-
-		http.Redirect(w, r, url, http.StatusFound)
-	})
+	registerRoutes(mux, db)
 
 	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Println("Listening on port 8080")
-	log.Fatal(srv.ListenAndServe())
-}
+	go func() {
+		log.Println("Listening on port 8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server failed to start: %v", err)
+		}
+	}()
 
-func generateRandomString() (string, error) {
-	buffer := make([]byte, 6)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-	return base64.URLEncoding.EncodeToString(buffer)[:6], nil
+	log.Println("Shutting down server...")
 }
