@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>goshort</title>
+    <link href="../static/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <a href="/">
+        <h1 class="title"><span id="go-word">go</span>short</h1>
+      </a>
+    </header>
+    <main>
+      <section id="urlbox">
+        <h2>Enter the URL to be shortened</h2>
+        <form action="/shorten" method="post">
+          <input
+            type="url"
+            name="url"
+            placeholder="https://example.com/some/long/link"
+            autocomplete="url"
+            required
+            autofocus
+          />
+          <button type="submit">Shorten URL</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

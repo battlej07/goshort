@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>goshort – result</title>
+    <link href="../static/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <a href="/">
+        <h1 class="title"><span id="go-word">go</span>short</h1>
+      </a>
+    </header>
+
+    <main>
+      <section id="urlbox">
+        <h2>Your shortened URL</h2>
+
+        <div class="result-box">
+          <input id="short-url" type="text" readonly value="{{.ShortURL}}" />
+          <button id="copy-btn">Copy</button>
+        </div>
+
+        <p id="copy-hint" hidden>Copied to clipboard ✓</p>
+      </section>
+    </main>
+
+    <script>
+      const btn = document.getElementById("copy-btn");
+      const input = document.getElementById("short-url");
+      const hint = document.getElementById("copy-hint");
+
+      btn.addEventListener("click", async () => {
+        await navigator.clipboard.writeText(input.value);
+        hint.hidden = false;
+
+        setTimeout(() => {
+          hint.hidden = true;
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>
