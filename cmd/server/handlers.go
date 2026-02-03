@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"html/template"
 	"net/http"
 
@@ -20,9 +18,7 @@ var (
 )
 
 func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
-	if err := homeTmpl.Execute(w, nil); err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
+	renderTemplate(w, homeTmpl, nil)
 }
 
 func (app *application) handleShorten(w http.ResponseWriter, r *http.Request) {
@@ -45,18 +41,11 @@ func (app *application) handleShorten(w http.ResponseWriter, r *http.Request) {
 
 	app.db[shortened] = url
 
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-
-	data := ResultPageData{scheme + "://" + r.Host + "/" + shortened}
+	data := ResultPageData{getScheme(r) + "://" + r.Host + "/" + shortened}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if err := resultTmpl.Execute(w, data); err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
+	renderTemplate(w, resultTmpl, data)
 }
 
 func (app *application) handleRedirect(w http.ResponseWriter, r *http.Request) {
@@ -65,21 +54,9 @@ func (app *application) handleRedirect(w http.ResponseWriter, r *http.Request) {
 	url, ok := app.db[shortenedID]
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
-		if err := notFoundTmpl.Execute(w, nil); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
+		renderTemplate(w, notFoundTmpl, nil)
 		return
 	}
 
 	http.Redirect(w, r, url, http.StatusFound)
-}
-
-func generateRandomString() (string, error) {
-	buffer := make([]byte, 6)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(buffer)[:6], nil
 }
