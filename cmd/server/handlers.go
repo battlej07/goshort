@@ -41,7 +41,20 @@ func (app *application) handleShorten(w http.ResponseWriter, r *http.Request) {
 
 	app.db[shortened] = url
 
-	data := ResultPageData{getScheme(r) + "://" + r.Host + "/" + shortened}
+	http.Redirect(w, r, "/result/"+shortened, http.StatusSeeOther)
+}
+
+func (app *application) handleResult(w http.ResponseWriter, r *http.Request) {
+	shortenedID := r.PathValue("shortenedID")
+
+	_, ok := app.db[shortenedID]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		renderTemplate(w, notFoundTmpl, nil)
+		return
+	}
+
+	data := ResultPageData{getScheme(r) + "://" + r.Host + "/" + shortenedID}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
