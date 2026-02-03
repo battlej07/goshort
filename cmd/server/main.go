@@ -1,38 +1,56 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/battlej07/goshort/internal/config"
 )
 
+type application struct {
+	logger *slog.Logger
+	db     map[string]string
+	config *config.Config
+}
+
 func main() {
-	mux := http.NewServeMux()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	db := map[string]string{}
 
-	registerRoutes(mux, db)
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logger.Error("Error loading config", "error", err)
+		return
+	}
+
+	app := &application{
+		logger: logger,
+		db:     db,
+		config: cfg,
+	}
 
 	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      mux,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:         ":" + cfg.Port,
+		Handler:      app.routes(),
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {
-		log.Println("Listening on port 8080")
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
-		}
+		logger.Info("starting server", "port", cfg.Port)
+		err = srv.ListenAndServe()
+		logger.Error(err.Error())
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	logger.Info("Shutting down server...")
 }

@@ -1,0 +1,4 @@
+github.com/battlej07/goenv v1.0.1 h1:7/ifsXjsdo6DqQo7ltzYmXehxe8Hi746Jdp0536tLbE=
+github.com/battlej07/goenv v1.0.1/go.mod h1:59k9JQcHUR7GoKkq2r6caRqwAMMA/tZ5vOn11RXyv38=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=

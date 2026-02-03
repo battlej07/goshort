@@ -19,63 +19,59 @@ var (
 	notFoundTmpl = template.Must(template.ParseFS(web.Files, "views/not-found.html"))
 )
 
-func handleHome(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 	if err := homeTmpl.Execute(w, nil); err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
-func handleShorten(db map[string]string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
+func (app *application) handleShorten(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
 
-		url := r.FormValue("url")
-		if url == "" {
-			http.Error(w, "URL is required", http.StatusBadRequest)
-			return
-		}
+	url := r.FormValue("url")
+	if url == "" {
+		http.Error(w, "URL is required", http.StatusBadRequest)
+		return
+	}
 
-		shortened, err := generateRandomString()
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+	shortened, err := generateRandomString()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
-		db[shortened] = url
+	app.db[shortened] = url
 
-		scheme := "http"
-		if r.TLS != nil {
-			scheme = "https"
-		}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
 
-		data := ResultPageData{scheme + "://" + r.Host + "/" + shortened}
+	data := ResultPageData{scheme + "://" + r.Host + "/" + shortened}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-		if err := resultTmpl.Execute(w, data); err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		}
+	if err := resultTmpl.Execute(w, data); err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
-func handleRedirect(db map[string]string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		shortenedID := r.PathValue("shortenedID")
+func (app *application) handleRedirect(w http.ResponseWriter, r *http.Request) {
+	shortenedID := r.PathValue("shortenedID")
 
-		url, ok := db[shortenedID]
-		if !ok {
-			w.WriteHeader(http.StatusNotFound)
-			if err := notFoundTmpl.Execute(w, nil); err != nil {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
-			}
-			return
+	url, ok := app.db[shortenedID]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		if err := notFoundTmpl.Execute(w, nil); err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
-
-		http.Redirect(w, r, url, http.StatusFound)
+		return
 	}
+
+	http.Redirect(w, r, url, http.StatusFound)
 }
 
 func generateRandomString() (string, error) {
