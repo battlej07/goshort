@@ -14,5 +14,5 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("POST /shorten", app.handleShorten)
 	mux.HandleFunc("GET /{shortenedID}", app.handleRedirect)
 
-	return mux
+	return app.recoverPanic(app.logRequest(mux))
 }
