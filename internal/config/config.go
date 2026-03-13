@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Port        string
 	BaseAddress string
+	DatabaseURL string
 }
 
 // LoadConfig loads the configuration from the environment.
@@ -30,8 +31,14 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	databaseURL, err := goenv.TryGetEnv("DATABASE_URL")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		Port:        port,
 		BaseAddress: baseAddr,
+		DatabaseURL: databaseURL,
 	}, nil
 }
